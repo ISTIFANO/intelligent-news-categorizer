@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+  airflow-redis:
+    image: redis:latest
+    container_name: airflow-redis
+    ports:
+      - "6379:6379"
+
+  airflow-postgres:
+    image: postgres:13
+    container_name: airflow-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-airflow:/var/lib/postgresql/data
+
+  airflow-webserver:
+    image: apache/airflow:2.7.1
+    container_name: airflow-webserver
+    restart: always
+    depends_on:
+      - airflow-redis
+      - airflow-postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: ""
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-postgres/airflow
+    volumes:
+      - ./dags:/opt/airflow/dags
+    ports:
+      - "8080:8080"
+    command: webserver
+
+  airflow-scheduler:
+    image: apache/airflow:2.7.1
+    container_name: airflow-scheduler
+    restart: always
+    depends_on:
+      - airflow-webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-postgres/airflow
+    volumes:
+      - ./dags:/opt/airflow/dags
+    command: scheduler
+
+volumes:
+  postgres-airflow:
