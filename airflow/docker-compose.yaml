@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   airflow-redis:
@@ -33,6 +33,7 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-postgres/airflow
     volumes:
       - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
     ports:
       - "8080:8080"
     command: webserver
@@ -50,6 +51,7 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-postgres/airflow
     volumes:
       - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
     command: scheduler
 
 volumes:
